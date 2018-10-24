@@ -1,12 +1,15 @@
 from django.shortcuts import render
 
 # Create your views here.
-from .forms import SignUpForm
+from .forms import SignUpForm, StatusForm
 from django.contrib.auth import login, authenticate
 from django.shortcuts import render, redirect
 from django.db.models import Max
 from django.views import generic
 from django.contrib.auth.models import User
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from .models import Status
 
 
 def signup(request):
@@ -25,3 +28,8 @@ def signup(request):
 
 def home(request):
     return render(request, 'index.html', {})
+
+class StatusCreate(CreateView):
+    model = Status
+    form_class=StatusForm
+    success_url = reverse_lazy( 'home')
