@@ -5,44 +5,126 @@
 {% block content %}
 {% load staticfiles %}
 <div class="uk-flex-middle uk-container">
-<div class="uk-card uk-card-default">
-  <div class="uk-card-header">
-    <h1 class="uk-text-center">Enter status of people you know</h1>
-  </div>
-  <div class="uk-card-body">
-      <form action="" method="post">
-          <div class="uk-form-group">
-          {% csrf_token %}
-          <!-- <table>
-            {{ form.as_table }}
-            </table><hr> -->
-            {% for field in form %}
-            {% if not field.help_text == "a" %}
-                <div class="form-group row">
-                    <div class="col-3">
-                      <p>{{ field.label_tag }}</p>
-                    </div>
-                    <div class="col-5">{{ field }}</div>
-                    {% if field.help_text %}<div class="form-helptext text-muted col-4">{{ field.help_text }}</div>{% endif %}
-                    {% if field.errors %}
-                    <div class="col-12">
-                        <br>
-                        <ul class="form-errors alert alert-danger">
-                        {% for error in field.errors %}
-                            <li><strong>{{ error|escape }}</strong></li>
-                        {% endfor %}
-                        </ul>
-                      </div>
+    <div class="uk-card uk-card-default">
+      <div class="uk-card-header">
+        <h1 class="uk-text-center">Enter status of people you know</h1>
+      </div>
+      <div class="uk-card-body">
+          <form action="" method="post">
+              <div class="uk-form-group">
+              {% csrf_token %}
+                {% for field in form %}
+                    {% if not field.help_text == "a" %}
+                        {% if field.help_text == "Enter your Latitude position" or field.help_text == "Enter your Longitude position" %}
+                            <div class="form-group row" style="display: none">
+                        {% else %}
+                            <hr>
+                            <div class="form-group row">
+                        {% endif %}
+                                <div class="col-3">
+                                  <p>{{ field.label_tag }}</p>
+                                </div>
+                                <div class="col-5">{{ field }}</div>
+                                {% if field.help_text %}
+                                    <div class="form-helptext text-muted col-4">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% if field.errors %}
+                                <div class="col-12">
+                                    <br>
+                                    <ul class="form-errors alert alert-danger">
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ error|escape }}</strong></li>
+                                    {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
                     {% endif %}
-                  </div>
-                {% endif %}<hr>
-            {% endfor %}
-            <input name="postedby" type="hidden" value="{{user.id}}"/>
-          <div class="uk-text-center">
-          <input type="submit" value="Submit" class="uk-button uk-button-default"/></div>
-          </div>
-      </form>
-  </div>
+                {% endfor %}
+                <hr>
+                <div id="map" class="uk-height-large uk-width-large uk-align-center"></div>
+                <hr>
+                <input name="postedby" type="hidden" value="{{user.id}}"/>
+              <div class="uk-text-center">
+              <input type="submit" value="Submit" class="uk-button uk-button-default"/></div>
+              </div>
+          </form>
+      </div>
+    </div>
 </div>
-</div>
+{% endblock %}
+{% block extra_body %}
+
+{% endblock %}
+{% block extra_js %}
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDt3q_TS7l66SglJ_VkvHzU7GKkR4Kvowg&callback=initMap" type="text/javascript"></script>
+<script>
+    //Set up some of our variables.
+    var map; //Will contain map object.
+    var marker = false; ////Has the user plotted their location marker?
+
+    //Function called to initialize / create the map.
+    //This is called when the page has loaded.
+    function initMap() {
+
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: -34.397, lng: 150.644},
+          zoom: 6
+        });
+
+        // Try HTML5 geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map.setCenter(pos);
+          }, function() {
+            handleLocationError(true, map.getCenter());
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, map.getCenter());
+        }
+
+        //Listen for any clicks on the map.
+        google.maps.event.addListener(map, 'click', function(event) {
+            //Get the location that the user clicked.
+            var clickedLocation = event.latLng;
+            //If the marker hasn't been added.
+            if(marker === false){
+                //Create the marker.
+                marker = new google.maps.Marker({
+                    position: clickedLocation,
+                    map: map,
+                    draggable: true //make it draggable
+                });
+                //Listen for drag events!
+                google.maps.event.addListener(marker, 'dragend', function(event){
+                    markerLocation();
+                });
+            } else{
+                //Marker has already been added, so just change its location.
+                marker.setPosition(clickedLocation);
+            }
+            //Get the marker's location.
+            markerLocation();
+        });
+    }
+
+    function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+        console.log("Location not supported");
+    }
+
+    //This function will get the marker's current location and then add the lat/long
+    //values to our textfields so that we can save the location.
+    function markerLocation(){
+        //Get location.
+        var currentLocation = marker.getPosition();
+        //Add lat and lng values to a field that we can save.
+        document.getElementById('id_latitude').value = currentLocation.lat(); //latitude
+        document.getElementById('id_longitude').value = currentLocation.lng(); //longitude
+    }
+</script>
 {% endblock %}
