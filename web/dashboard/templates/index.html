@@ -4,5 +4,59 @@
 
 {% block content %}
 {% load staticfiles %}
-<div class="uk-text-center"><h1>Dashboard</h1></div><hr>
+    <div class="uk-text-center">
+        <h1>Dashboard</h1>
+    </div>
+    <hr>
+    <div id="map" class="uk-align-center" style="width: 75vw; height: 60vh"></div>
+{% endblock %}
+{% block extra_js %}
+    <script>
+      var map;
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: -34.397, lng: 150.644},
+          zoom: 6
+        });
+
+        // Try HTML5 geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map.setCenter(pos);
+          }, function() {
+            handleLocationError(true, map.getCenter());
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, map.getCenter());
+        }
+        $.ajax({
+          type: "GET",
+          url: "/a",
+          data: {},
+          success: function (data) {
+              console.log(data);
+              var num_status = data.status.length;
+              for (var i = 0; i < num_status; i++) {
+                  var coords = [];
+                  coords.push(data.status[i].fields.latitude);
+                  coords.push(data.status[i].fields.longitude);
+                  var latLng = new google.maps.LatLng(coords[0],coords[1]);
+                  var marker = new google.maps.Marker({
+                    position: latLng,
+                    title: data.status[i].fields.people_injured.toString()+" people injured and "+data.status[i].fields.people_stuck.toString()+" people stuck\n"+"Cause: "+data.status[i].fields.name,
+                    map: map
+                  });
+              }
+          }
+        });
+      }
+
+
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDt3q_TS7l66SglJ_VkvHzU7GKkR4Kvowg&callback=initMap"></script>
 {% endblock %}
