@@ -11,7 +11,6 @@ class Status(models.Model):
     name = models.CharField(max_length=100,default="None")
 
 class Type(models.Model):
-
     user=models.OneToOneField(User, related_name="location", on_delete=models.CASCADE, help_text="a")
     latitude = models.DecimalField(max_digits=30, decimal_places=15,blank=True, null=True)
     longitude = models.DecimalField(max_digits=30, decimal_places=15,blank=True, null=True)

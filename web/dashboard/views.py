@@ -51,6 +51,14 @@ def statusDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Status.objects.get(pk=pk),]))
     return JsonResponse({"s":all})
 
+def allTypeAPI(request):
+    all = json.loads(serializers.serialize("json", Type.objects.all()))
+    return JsonResponse({"status":all})
+
+def typeDetailAPI(request,pk):
+    all = json.loads(serializers.serialize("json", [Type.objects.get(pk=pk),]))
+    return JsonResponse({"s":all})
+
 def createStatus(request):
     if request.method=='POST':
         data = json.loads(request.body.decode("utf-8"))
@@ -58,6 +66,10 @@ def createStatus(request):
 def allUserAPI(request):
     all = json.loads(serializers.serialize("json", User.objects.all()))
     return JsonResponse({"user":all})
+
+def userDetailAPI(request,pk):
+    all = json.loads(serializers.serialize("json", [User.objects.get(pk=pk),]))
+    return JsonResponse({"u":all})
 
 from django.core.exceptions import ObjectDoesNotExist
 

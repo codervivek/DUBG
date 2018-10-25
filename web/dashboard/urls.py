@@ -9,7 +9,10 @@ urlpatterns = [
     url(r'^status/create/$', views.StatusCreate.as_view(), name='status_create'),
     url(r'^a/$', views.allStatusAPI, name='status_list'),
     url(r'^b/(?P<pk>\d+)$', views.statusDetailAPI, name='status_detail'),
+    url(r'^type/$', views.allTypeAPI, name='type_list'),
+    url(r'^type/(?P<pk>\d+)$', views.typeDetailAPI, name='type_detail'),
     url(r'^users/$', views.allUserAPI, name='user_list'),
+    url(r'^users/(?P<pk>\d+)$', views.userDetailAPI, name='user_detail'),
     url(r'^status/update$', views.statusUpdateAPI, name='status_update'),
     url(r'^type/create/$', views.TypeCreate.as_view(), name='type_create'),
 ]
