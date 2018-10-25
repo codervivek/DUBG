@@ -24,3 +24,9 @@ class Type(models.Model):
         default='v',
         help_text='Select your category',
     )
+
+class Message(models.Model):
+    user=models.ForeignKey(User, related_name="message", on_delete=models.CASCADE, help_text="a")
+    latitude = models.DecimalField(max_digits=30, decimal_places=15,blank=True, null=True)
+    longitude = models.DecimalField(max_digits=30, decimal_places=15,blank=True, null=True)
+    message = models.TextField()

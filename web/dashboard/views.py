@@ -9,7 +9,7 @@ from django.views import generic
 from django.contrib.auth.models import User
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from .models import Status, Type
+from .models import Status, Type, Message
 
 
 def signup(request):
@@ -59,6 +59,14 @@ def typeDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Type.objects.get(pk=pk),]))
     return JsonResponse({"s":all})
 
+def allMessageAPI(request):
+    all = json.loads(serializers.serialize("json", Message.objects.all()))
+    return JsonResponse({"status":all})
+
+def messageDetailAPI(request,pk):
+    all = json.loads(serializers.serialize("json", [Message.objects.get(pk=pk),]))
+    return JsonResponse({"s":all})
+
 def createStatus(request):
     if request.method=='POST':
         data = json.loads(request.body.decode("utf-8"))
@@ -73,13 +81,32 @@ def userDetailAPI(request,pk):
 
 from django.core.exceptions import ObjectDoesNotExist
 
-def statusUpdateAPI(request):
-    user = User.objects.get(pk=request.GET.get('pk'))
-    try:
-        user.location.latitude=request.GET.get('latitude')
-        user.location.longitude=request.GET.get('longitude')
-    except ObjectDoesNotExist:
-        location = Type.objects.create(user=request.user, latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude'))
+# def statusUpdateAPI(request):
+#     user = User.objects.get(pk=request.GET.get('pk'))
+#     try:
+#         user.location.latitude=request.GET.get('latitude')
+#         user.location.longitude=request.GET.get('longitude')
+#     except ObjectDoesNotExist:
+#         location = Type.objects.create(user=request.user, latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude'))
     
+#     return JsonResponse({"success":True})
+
+
+def locationCreateAPI(request):
+    user = User.objects.get(pk=request.GET.get('pk'))
+    user.location.latitude=request.GET.get('latitude')
+    user.location.longitude=request.GET.get('longitude')
     return JsonResponse({"success":True})
 
+def locationUpdateAPI(request):
+    user = User.objects.get(pk=request.GET.get('pk'))
+    user.location.latitude=request.GET.get('latitude')
+    user.location.longitude=request.GET.get('longitude')
+    return JsonResponse({"success":True})
+
+def messageCreateAPI(request):
+    message = Message.objects.create(user=request.GET.get('pk')
+    ,latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude')
+    ,message=request.GET.get('message'))
+
+    return JsonResponse({"success":True})
