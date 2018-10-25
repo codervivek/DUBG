@@ -9,3 +9,9 @@ class Status(models.Model):
     num_people = models.PositiveIntegerField()
     num_injured = models.PositiveIntegerField()
     comments = models.TextField()
+
+class Location(models.Model):
+
+    user=models.OneToOneField(User, related_name="location", on_delete=models.CASCADE, help_text="a")
+    latitude = models.DecimalField(max_digits=30, decimal_places=15)
+    longitude = models.DecimalField(max_digits=30, decimal_places=15)
