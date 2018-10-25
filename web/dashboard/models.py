@@ -24,6 +24,7 @@ class Type(models.Model):
         default='v',
         help_text='Select your category',
     )
+    engaged=models.OneToOneField(Status, related_name="rescuer", help_text="a",blank=True, null=True)
 
 class Message(models.Model):
     user=models.ForeignKey(User, related_name="message", on_delete=models.CASCADE, help_text="a")

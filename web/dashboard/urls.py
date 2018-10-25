@@ -19,4 +19,6 @@ urlpatterns = [
     url(r'^message/(?P<pk>\d+)$', views.messageDetailAPI, name='message_detail'),
     url(r'^location/update$', views.locationUpdateAPI, name='location_update'),
     url(r'^message/create$', views.messageCreateAPI, name='message_create'),
+    # url(r'^type/connect$', views.connectType, name='connect_type'),
+
 ]

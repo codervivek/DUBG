@@ -57,15 +57,17 @@ def allTypeAPI(request):
 
 def typeDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Type.objects.get(pk=pk),]))
-    return JsonResponse({"s":all})
+    username = Type.objects.get(pk=pk).user.first_name +" "+Type.objects.get(pk=pk).user.last_name
+    return JsonResponse({"s":all,"username":username})
 
 def allMessageAPI(request):
-    all = json.loads(serializers.serialize("json", Message.objects.all()))
+    all = json.loads(serializers.serialize("json", Message.objects.exclude(user=request.GET.get('pk'))))
     return JsonResponse({"status":all})
 
 def messageDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Message.objects.get(pk=pk),]))
-    return JsonResponse({"s":all})
+    username = Message.objects.get(pk=pk).user.first_name +" "+Message.objects.get(pk=pk).user.last_name
+    return JsonResponse({"status":all,"username":username})
 
 def createStatus(request):
     if request.method=='POST':
@@ -102,11 +104,25 @@ def locationUpdateAPI(request):
     user = User.objects.get(pk=request.GET.get('pk'))
     user.location.latitude=request.GET.get('latitude')
     user.location.longitude=request.GET.get('longitude')
+    user.location.save()
+    print(request.GET)
+    print(user.location.latitude)
     return JsonResponse({"success":True})
 
 def messageCreateAPI(request):
-    message = Message.objects.create(user=request.GET.get('pk')
+    print(request.GET)
+    message = Message.objects.create(user=User.objects.get(id=request.GET.get('pk'))
     ,latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude')
     ,message=request.GET.get('message'))
+    message.save()
 
     return JsonResponse({"success":True})
+
+# def messageCreateAPI(request):
+#     print(request.GET)
+#     message = Message.objects.create(user=User.objects.get(id=request.GET.get('pk'))
+#     ,latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude')
+#     ,message=request.GET.get('message'))
+#     message.save()
+
+#     return JsonResponse({"success":True})
