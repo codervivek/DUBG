@@ -17,4 +17,4 @@ class SignUpForm(UserCreationForm):
 class StatusForm(forms.ModelForm):
     class Meta:
         model = Status
-        fields = ['postedby', 'num_injured', 'num_people', 'comments', 'latitude', 'longitude']
+        fields = ['postedby', 'people_injured', 'people_stuck', 'name', 'latitude', 'longitude']

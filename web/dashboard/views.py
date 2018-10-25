@@ -9,7 +9,7 @@ from django.views import generic
 from django.contrib.auth.models import User
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from .models import Status, Location
+from .models import Status, Type
 
 
 def signup(request):
@@ -21,7 +21,7 @@ def signup(request):
             raw_password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=raw_password)
             login(request, user)
-            return redirect('home')
+            return redirect('type_create')
     else:
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
@@ -32,6 +32,11 @@ def home(request):
 class StatusCreate(CreateView):
     model = Status
     form_class=StatusForm
+    success_url = reverse_lazy( 'home')
+
+class TypeCreate(CreateView):
+    model = Type
+    fields = ['user','status']
     success_url = reverse_lazy( 'home')
 
 from django.core import serializers
@@ -62,7 +67,7 @@ def statusUpdateAPI(request):
         user.location.latitude=request.GET.get('latitude')
         user.location.longitude=request.GET.get('longitude')
     except ObjectDoesNotExist:
-        location = Location.objects.create(user=request.user, latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude'))
+        location = Type.objects.create(user=request.user, latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude'))
     
     return JsonResponse({"success":True})
 

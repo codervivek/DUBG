@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Location, Status
+from .models import Type, Status
 
-admin.site.register(Location)
+admin.site.register(Type)
 admin.site.register(Status)
