@@ -51,11 +51,11 @@ def statusDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Status.objects.get(pk=pk),]))
     return JsonResponse({"s":all})
 
-def allTypeAPI(request,pk):
+def allTypeAPI(request):
     all = json.loads(serializers.serialize("json", Type.objects.exclude(user=request.GET.get('pk'))))
     return JsonResponse({"status":all})
 
-def typeDetailAPI(request):
+def typeDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Type.objects.get(pk=pk),]))
     username = Type.objects.get(pk=pk).user.first_name +" "+Type.objects.get(pk=pk).user.last_name
     return JsonResponse({"s":all,"username":username})
