@@ -55,7 +55,7 @@ def allTypeAPI(request,pk):
     all = json.loads(serializers.serialize("json", Type.objects.exclude(user=request.GET.get('pk'))))
     return JsonResponse({"status":all})
 
-def typeDetailAPI(request,pk):
+def typeDetailAPI(request):
     all = json.loads(serializers.serialize("json", [Type.objects.get(pk=pk),]))
     username = Type.objects.get(pk=pk).user.first_name +" "+Type.objects.get(pk=pk).user.last_name
     return JsonResponse({"s":all,"username":username})
