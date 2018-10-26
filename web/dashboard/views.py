@@ -79,7 +79,7 @@ def allUserAPI(request):
 
 def userDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [User.objects.get(pk=pk),]))
-    return JsonResponse({"u":all})
+    return JsonResponse({"user":all})
 
 from django.core.exceptions import ObjectDoesNotExist
 
