@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class Status(models.Model):
-    postedby = models.ForeignKey(User, on_delete=models.CASCADE, help_text="a")
+    postedby = models.ForeignKey(User, on_delete=models.CASCADE, help_text="a",blank=True, null=True)
     latitude = models.DecimalField(max_digits=30, decimal_places=15, help_text="Enter your Latitude position")
     longitude = models.DecimalField(max_digits=30, decimal_places=15, help_text="Enter your Longitude position")
     people_stuck = models.PositiveIntegerField(help_text="Enter number of People stuck")

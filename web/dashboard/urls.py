@@ -9,7 +9,7 @@ urlpatterns = [
     url(r'^status/create/$', views.StatusCreate.as_view(), name='status_create'),
     url(r'^a/$', views.allStatusAPI, name='status_list'),
     url(r'^b/(?P<pk>\d+)$', views.statusDetailAPI, name='status_detail'),
-    url(r'^type/$', views.allTypeAPI, name='type_list'),
+    url(r'^type/(?P<pk>\d+)$', views.allTypeAPI, name='type_list'),
     url(r'^type/(?P<pk>\d+)$', views.typeDetailAPI, name='type_detail'),
     url(r'^users/$', views.allUserAPI, name='user_list'),
     url(r'^users/(?P<pk>\d+)$', views.userDetailAPI, name='user_detail'),
@@ -19,6 +19,7 @@ urlpatterns = [
     url(r'^message/(?P<pk>\d+)$', views.messageDetailAPI, name='message_detail'),
     url(r'^location/update$', views.locationUpdateAPI, name='location_update'),
     url(r'^message/create$', views.messageCreateAPI, name='message_create'),
+    url(r'^status/create$', views.statusCreateAPI, name='status_create'),
     # url(r'^type/connect$', views.connectType, name='connect_type'),
 
 ]

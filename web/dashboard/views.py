@@ -51,8 +51,8 @@ def statusDetailAPI(request,pk):
     all = json.loads(serializers.serialize("json", [Status.objects.get(pk=pk),]))
     return JsonResponse({"s":all})
 
-def allTypeAPI(request):
-    all = json.loads(serializers.serialize("json", Type.objects.all()))
+def allTypeAPI(request,pk):
+    all = json.loads(serializers.serialize("json", Type.objects.exclude(user=request.GET.get('pk'))))
     return JsonResponse({"status":all})
 
 def typeDetailAPI(request,pk):
@@ -115,6 +115,12 @@ def messageCreateAPI(request):
     ,latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude')
     ,message=request.GET.get('message'))
     message.save()
+
+    return JsonResponse({"success":True})
+
+def statusCreateAPI(request):
+    print(request.GET)
+    status = Status.objects.create(latitude=request.GET.get('latitude'),longitude=request.GET.get('longitude'),name=request.GET.get('name'),people_stuck=request.GET.get('people_stuck'),people_injured=request.GET.get('people_injured'))
 
     return JsonResponse({"success":True})
 
