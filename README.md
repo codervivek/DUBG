@@ -1,3 +1,5 @@
+
+![Icon](https://github.com/codervivek/DUBG/blob/master/images/1.png "Icon")
 # DUBG (DisasterUnknown's Battlegrounds)
 
 ## Motivation:
