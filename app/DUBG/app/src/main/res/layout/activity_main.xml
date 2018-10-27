@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@color/background_color"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/AppName"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="DUBG"
+        android:textColor="@color/white_greyish"
+        android:textSize="80sp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/ar"
+        android:layout_marginTop="150dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/loginbutton_selector"
+        android:padding="3dp"
+        android:textColor="#009688"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:text="View status in AR"
+        tools:layout_editor_absoluteX="230dp"
+        tools:layout_editor_absoluteY="231dp" />
+
+    <Button
+        android:id="@+id/login"
+        android:layout_marginTop="250dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/loginbutton_selector"
+        android:padding="3dp"
+        android:textColor="#009688"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:text="Login"
+        tools:layout_editor_absoluteX="230dp"
+        tools:layout_editor_absoluteY="231dp" />
+
+    <Button
+        android:id="@+id/SOS"
+        android:layout_marginTop="350dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/loginbutton_selector"
+        android:padding="3dp"
+        android:textColor="#009688"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:text="SOS"
+        tools:layout_editor_absoluteX="230dp"
+        tools:layout_editor_absoluteY="231dp" />
+
+</RelativeLayout>
