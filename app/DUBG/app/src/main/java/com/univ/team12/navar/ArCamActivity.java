@@ -100,7 +100,6 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
         Set_googleApiClient(); //Sets the GoogleApiClient
         myPreferences = PreferenceManager.getDefaultSharedPreferences(ArCamActivity.this);
         myEditor = myPreferences.edit();
-
         //Configure_AR(); //Configure AR Environment
 
 //        Directions_call();
@@ -123,6 +122,7 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
     }
 
     private void Configure_AR(){
+        int visiblity = myPreferences.getInt("visiblity",1);
         List<List<LatLng>> polylineLatLng=new ArrayList<>();
 
         world=new World(getApplicationContext());
@@ -185,14 +185,15 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
         int temp_inter_polycount=0;
 
         //TODO The Given below is for rendering all the LatLng in THe polylines , which is more accurate
-        for(int j=0;j<polylineLatLng.size();j++){
-            for(int k=0;k<polylineLatLng.get(j).size();k++){
-                GeoObject polyGeoObj=new GeoObject(1000+temp_polycount++);
+        if(visiblity<=1) {
+            for (int j = 0; j < polylineLatLng.size(); j++) {
+                for (int k = 0; k < polylineLatLng.get(j).size(); k++) {
+                    GeoObject polyGeoObj = new GeoObject(1000 + temp_polycount++);
 
-                polyGeoObj.setGeoPosition(polylineLatLng.get(j).get(k).latitude,
-                        polylineLatLng.get(j).get(k).longitude);
-                polyGeoObj.setImageResource(R.drawable.ar_sphere_150x);
-                polyGeoObj.setName("arObj"+j+k);
+                    polyGeoObj.setGeoPosition(polylineLatLng.get(j).get(k).latitude,
+                            polylineLatLng.get(j).get(k).longitude);
+                    polyGeoObj.setImageResource(R.drawable.ar_sphere);
+                    polyGeoObj.setName("arObj" + j + k);
 
                 /*
                 To fill the gaps between the Poly objects as AR Objects in the AR View , add some more
@@ -201,79 +202,80 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
                 Haversine formula , Bearing Calculation and formula to find
                 Destination point given distance and bearing from start point is used .
                  */
+                    if(visiblity==0){
+                        try {
 
-                    try {
+                            //Initialize distance of consecutive polyobjects
+                            double dist = LocationCalc.haversine(polylineLatLng.get(j).get(k).latitude,
+                                    polylineLatLng.get(j).get(k).longitude, polylineLatLng.get(j).get(k + 1).latitude,
+                                    polylineLatLng.get(j).get(k + 1).longitude) * 1000;
 
-                        //Initialize distance of consecutive polyobjects
-                        double dist = LocationCalc.haversine(polylineLatLng.get(j).get(k).latitude,
-                                polylineLatLng.get(j).get(k).longitude, polylineLatLng.get(j).get(k + 1).latitude,
-                                polylineLatLng.get(j).get(k + 1).longitude) * 1000;
+                            //Log.d(TAG, "Configure_AR: polyLineLatLng("+j+","+k+")="+polylineLatLng.get(j).get(k).latitude+","+polylineLatLng.get(j).get(k).longitude);
+                            //Log.d(TAG, "Configure_AR: polyLineLatLng("+j+","+(k+1)+")="+polylineLatLng.get(j).get(k+1).latitude+","+polylineLatLng.get(j).get(k+1).longitude);
 
-                        //Log.d(TAG, "Configure_AR: polyLineLatLng("+j+","+k+")="+polylineLatLng.get(j).get(k).latitude+","+polylineLatLng.get(j).get(k).longitude);
-                        //Log.d(TAG, "Configure_AR: polyLineLatLng("+j+","+(k+1)+")="+polylineLatLng.get(j).get(k+1).latitude+","+polylineLatLng.get(j).get(k+1).longitude);
+                            //Check if distance between polyobjects is greater than twice the amount of space
+                            // intended , here it is (3*2)=6 .
+                            if (dist > 6) {
 
-                        //Check if distance between polyobjects is greater than twice the amount of space
-                        // intended , here it is (3*2)=6 .
-                        if (dist > 6) {
+                                //Initialize count of ar objects to be added
+                                int arObj_count = ((int) dist / 3) - 1;
 
-                            //Initialize count of ar objects to be added
-                            int arObj_count = ((int) dist / 3) - 1;
+                                //Log.d(TAG, "Configure_AR: Dist:" + dist + " # No of Objects: " + arObj_count + "\n --------");
 
-                            //Log.d(TAG, "Configure_AR: Dist:" + dist + " # No of Objects: " + arObj_count + "\n --------");
+                                double bearing = LocationCalc.calcBearing(polylineLatLng.get(j).get(k).latitude,
+                                        polylineLatLng.get(j).get(k + 1).latitude,
+                                        polylineLatLng.get(j).get(k).longitude,
+                                        polylineLatLng.get(j).get(k + 1).longitude);
 
-                            double bearing = LocationCalc.calcBearing(polylineLatLng.get(j).get(k).latitude,
-                                    polylineLatLng.get(j).get(k + 1).latitude,
-                                    polylineLatLng.get(j).get(k).longitude,
-                                    polylineLatLng.get(j).get(k + 1).longitude);
+                                double heading = SphericalUtil.computeHeading(new LatLng(polylineLatLng.get(j).get(k).latitude,
+                                                polylineLatLng.get(j).get(k).longitude),
+                                        new LatLng(polylineLatLng.get(j).get(k + 1).latitude,
+                                                polylineLatLng.get(j).get(k + 1).longitude));
 
-                            double heading = SphericalUtil.computeHeading(new LatLng(polylineLatLng.get(j).get(k).latitude,
-                                    polylineLatLng.get(j).get(k).longitude),
-                                    new LatLng(polylineLatLng.get(j).get(k + 1).latitude,
-                                    polylineLatLng.get(j).get(k + 1).longitude));
+                                LatLng tempLatLng = SphericalUtil.computeOffset(new LatLng(polylineLatLng.get(j).get(k).latitude,
+                                                polylineLatLng.get(j).get(k).longitude)
+                                        , 3f
+                                        , heading);
 
-                            LatLng tempLatLng = SphericalUtil.computeOffset(new LatLng(polylineLatLng.get(j).get(k).latitude,
-                                    polylineLatLng.get(j).get(k).longitude)
-                                    ,3f
-                                    ,heading);
+                                //The distance to be incremented
+                                double increment_dist = 3f;
 
-                            //The distance to be incremented
-                            double increment_dist = 3f;
+                                for (int i = 0; i < arObj_count; i++) {
+                                    GeoObject inter_polyGeoObj = new GeoObject(5000 + temp_inter_polycount++);
 
-                            for (int i = 0; i < arObj_count; i++) {
-                                GeoObject inter_polyGeoObj = new GeoObject(5000 + temp_inter_polycount++);
+                                    //Store the Lat,Lng details into new LatLng Objects using the functions
+                                    //in LocationCalc class.
+                                    if (i > 0 && k < polylineLatLng.get(j).size()) {
+                                        increment_dist += 3f;
 
-                                //Store the Lat,Lng details into new LatLng Objects using the functions
-                                //in LocationCalc class.
-                                if (i > 0 && k < polylineLatLng.get(j).size()) {
-                                    increment_dist += 3f;
+                                        tempLatLng = SphericalUtil.computeOffset(new LatLng(polylineLatLng.get(j).get(k).latitude,
+                                                        polylineLatLng.get(j).get(k).longitude),
+                                                increment_dist,
+                                                SphericalUtil.computeHeading(new LatLng(polylineLatLng.get(j).get(k).latitude
+                                                        , polylineLatLng.get(j).get(k).longitude), new LatLng(
+                                                        polylineLatLng.get(j).get(k + 1).latitude
+                                                        , polylineLatLng.get(j).get(k + 1).longitude)));
+                                    }
 
-                                    tempLatLng = SphericalUtil.computeOffset(new LatLng(polylineLatLng.get(j).get(k).latitude,
-                                                    polylineLatLng.get(j).get(k).longitude),
-                                            increment_dist,
-                                            SphericalUtil.computeHeading(new LatLng(polylineLatLng.get(j).get(k).latitude
-                                                    , polylineLatLng.get(j).get(k).longitude), new LatLng(
-                                                    polylineLatLng.get(j).get(k + 1).latitude
-                                                    , polylineLatLng.get(j).get(k + 1).longitude)));
+                                    //Set the Geoposition along with image and name
+                                    inter_polyGeoObj.setGeoPosition(tempLatLng.latitude, tempLatLng.longitude);
+                                    inter_polyGeoObj.setImageResource(R.drawable.ar_sphere_default_125x);
+                                    inter_polyGeoObj.setName("inter_arObj" + j + k + i);
+
+                                    //Log.d(TAG, "Configure_AR: LOC: k="+k+" "+ inter_polyGeoObj.getLatitude() + "," + inter_polyGeoObj.getLongitude());
+
+                                    //Add Intermediate ArObjects to Augmented Reality World
+                                    world.addBeyondarObject(inter_polyGeoObj);
                                 }
-
-                                //Set the Geoposition along with image and name
-                                inter_polyGeoObj.setGeoPosition(tempLatLng.latitude, tempLatLng.longitude);
-                                inter_polyGeoObj.setImageResource(R.drawable.ar_sphere_default_125x);
-                                inter_polyGeoObj.setName("inter_arObj" + j + k + i);
-
-                                //Log.d(TAG, "Configure_AR: LOC: k="+k+" "+ inter_polyGeoObj.getLatitude() + "," + inter_polyGeoObj.getLongitude());
-
-                                //Add Intermediate ArObjects to Augmented Reality World
-                                world.addBeyondarObject(inter_polyGeoObj);
                             }
+                        } catch (Exception e) {
+                            Log.d(TAG, "Configure_AR: EXCEPTION CAUGHT:" + e.getMessage());
                         }
-                    } catch (Exception e) {
-                        Log.d(TAG, "Configure_AR: EXCEPTION CAUGHT:" + e.getMessage());
                     }
-
-                //Add PolyObjects as ArObjects to Augmented Reality World
-                world.addBeyondarObject(polyGeoObj);
-                Log.d(TAG, "\n\n");
+                    //Add PolyObjects as ArObjects to Augmented Reality World
+                    world.addBeyondarObject(polyGeoObj);
+                    Log.d(TAG, "\n\n");
+                }
             }
         }
 

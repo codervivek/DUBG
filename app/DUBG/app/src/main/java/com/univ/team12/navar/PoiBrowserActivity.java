@@ -107,6 +107,7 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
     private SharedPreferences myPreferences;
     private LocationManager mLocationManager;
     private LocationListener mLocationListener;
+    private int selectedVisiblity;
 
     @BindView(R.id.poi_place_detail)
     CardView poi_cardview;
@@ -125,10 +126,12 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
     @BindView(R.id.sendMessage)
     Button message;
 
+    SharedPreferences.Editor myEditor;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_poi_browser);
+
         mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         mLocationListener = new LocationListener() {
             // @Override
@@ -165,7 +168,7 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
         }
         ButterKnife.bind(this);
         myPreferences = PreferenceManager.getDefaultSharedPreferences(PoiBrowserActivity.this);
-
+        myEditor = myPreferences.edit();
         poi_cardview.setVisibility(View.GONE);
 
         if(!UtilsCheck.isNetworkConnected(this)){
@@ -232,6 +235,102 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
                             @Override
                             public void onClick(DialogInterface dialog, int id) {
                                 EditText message = (EditText) v.findViewById(R.id.message);
+                                if(message.getText().toString().equals("near")){
+                                    HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+                                    interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+                                    OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+
+                                    Retrofit retrofit = new Retrofit.Builder()
+                                            .baseUrl(getResources().getString(R.string.localhost_base_url))
+                                            .addConverterFactory(GsonConverterFactory.create())
+                                            .build();
+
+                                    RetrofitInterface apiService =
+                                            retrofit.create(RetrofitInterface.class);
+
+                                    final Call<PoiResponse> call = apiService.listPOI();
+
+                                    Log.e("vivek","Retrofit done");
+
+                                    call.enqueue(new Callback<PoiResponse>() {
+                                        @Override
+                                        public void onResponse(Call<PoiResponse> call, Response<PoiResponse> response) {
+                                            Log.e("vivek","Retrofit recieved");
+
+
+
+                                            List<Status> poiResult=response.body().getStatus();
+
+                                            Double min=Double.MAX_VALUE;
+                                            Double minLat=0d;
+                                            Double minLong=0d;
+                                            for(int i=0;i<poiResult.size();i++) {
+                                                Double distance=(SphericalUtil.computeDistanceBetween(
+                                                        new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),
+                                                        new LatLng(Double.parseDouble(poiResult.get(i).getFields().getLatitude()),
+                                                                Double.parseDouble(poiResult.get(i).getFields().getLongitude()))));
+                                                if(distance<min){
+                                                    min=distance;
+                                                    minLat=Double.parseDouble(poiResult.get(i).getFields().getLatitude());
+                                                    minLong=Double.parseDouble(poiResult.get(i).getFields().getLongitude());
+                                                }
+                                            }
+
+                                                Intent intent = new Intent(PoiBrowserActivity.this, ArCamActivity.class);
+
+                                                try {
+
+                                                    intent.putExtra("SRC", "Current Location");
+                                                    intent.putExtra("DEST", minLat + "," +
+                                                            minLong);
+                                                    intent.putExtra("SRCLATLNG", mLastLocation.getLatitude() + "," + mLastLocation.getLongitude());
+                                                    intent.putExtra("DESTLATLNG", minLat + "," +
+                                                            minLong);
+                                                    startActivity(intent);
+                                                    finish();
+                                                } catch (NullPointerException npe) {
+                                                    Log.d(TAG, "onClick: The IntentExtras are Empty");
+                                                }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<PoiResponse> call, Throwable t) {
+                                        }
+                                    });
+                                    return;
+
+                                }
+                                else if(message.getText().toString().equals("visibility")) {
+                                    AlertDialog.Builder alert_dialog_builder_course_selection = new AlertDialog.Builder(PoiBrowserActivity.this);
+                                    String []choice={"Low","Medium","High"};
+                                    alert_dialog_builder_course_selection.setTitle("Select visiblity").setSingleChoiceItems(choice, -1, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        //when selected identify the course index selected
+                                        public void onClick(DialogInterface dialog, int selected_index) {
+                                            selectedVisiblity= selected_index;
+                                        }
+                                    }).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        //on positive response allow session password taking
+                                        public void onClick(DialogInterface dialog, int selected_index) {
+//                                            Log.e("asjd",""+selectedMess);
+                                            myEditor.putInt("visiblity",selectedVisiblity);
+                                            myEditor.apply();
+//                                            mess.setText(messList.get(selectedMess)+" Hostel");
+                                        }
+                                    }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        //on negative response end the dialog
+                                        public void onClick(DialogInterface dialog, int selected_index) {
+                                            dialog.cancel();
+                                        }
+                                    });
+                                    AlertDialog alert_dialog_course_selection = alert_dialog_builder_course_selection.create();
+
+                                    // show it
+                                    alert_dialog_course_selection.show();
+                                    return;
+                                }
                                 HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
                                 interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
                                 OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
@@ -450,6 +549,7 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
                         Intent intent=new Intent(PoiBrowserActivity.this,ArCamActivity.class);
 
                         try {
+                            intent.putExtra("visiblity",1);
                             intent.putExtra("SRC", "Current Location");
                             intent.putExtra("DEST",  fields.getLatitude()+","+
                                     fields.getLongitude());
@@ -535,6 +635,7 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
                         Intent intent=new Intent(PoiBrowserActivity.this,ArCamActivity.class);
 
                         try {
+                            intent.putExtra("visiblity",1);
                             intent.putExtra("SRC", "Current Location");
                             intent.putExtra("DEST",  fields.getLatitude()+","+
                                     fields.getLongitude());
@@ -624,6 +725,7 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
                         Intent intent=new Intent(PoiBrowserActivity.this,ArCamActivity.class);
 
                         try {
+                            intent.putExtra("visiblity",1);
                             intent.putExtra("SRC", "Current Location");
                             intent.putExtra("DEST",  fields.getLatitude()+","+
                                     fields.getLongitude());
