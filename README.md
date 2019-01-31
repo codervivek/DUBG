@@ -12,11 +12,11 @@
 
 # **The team**
 
-**Vivek Raj, **Indian Institute Of Technology Guwahati, Computer Science and Engineering, B.Tech, 2020 - Loves to automate daily tasks, interested in serious TV shows
+**Vivek Raj**,Indian Institute Of Technology Guwahati, Computer Science and Engineering, B.Tech, 2020 - Loves to automate daily tasks, interested in serious TV shows
 
 **Ekagra Ranjan,** Indian Institute Of Technology Guwahati, Electronics and Communication Engineering, B.Tech, 2020 - Interested in Artificial Intelligence, likes to watch standup comedy
 
-**Pavan Kumar, **Indian Institute Of Technology Guwahati, Computer Science and Engineering B.Tech, 2020 - Loves to make things with code, 
+**Pavan Kumar**,Indian Institute Of Technology Guwahati, Computer Science and Engineering B.Tech, 2020 - Loves to make things with code, 
 
 
 # **The Concept**
@@ -25,7 +25,7 @@ In the event of a catastrophe, the affected population gets broadly divided into
 
 DUBG is a mixed reality app for efficient post disaster management. Rescuer teams are very busy during operation, which is why we built our app based on Mixed Reality so that the **rescuers don't waste time on planning their rescue drive and operating any device for communication. **Our vision is to create an Augmented Reality (AR) based navigation system which disaster rescue team can use in a hassle free manner. 
 
-**The features of our application can also be extended to help army to communicate and coordinate efficaciously in unknown terrains. **
+**The features of our application can also be extended to help army to communicate and coordinate efficaciously in unknown terrains **.
 
 
 ## **Features:**
