@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -49,16 +50,25 @@ import com.univ.team12.navar.network.model.Step;
 import com.univ.team12.navar.utils.LocationCalc;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import okhttp3.Cache;
+import okhttp3.CacheControl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+//import okhttp3;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
-import retrofit2.Response;
+//import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -76,6 +86,15 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
     @BindView(R.id.ar_dir_time)
     TextView dirTime;
 
+
+    public static final String HEADER_CACHE_CONTROL = "Cache-Control";
+    public static final String HEADER_PRAGMA = "Pragma";
+
+    private Context mContext;
+
+    private Retrofit mRetrofit, mCachedRetrofit;
+
+    private Cache mCache;
     private final static String TAG="ArCamActivity";
     private String srcLatLng;
     private String destLatLng;
@@ -103,6 +122,120 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
         //Configure_AR(); //Configure AR Environment
 
 //        Directions_call();
+    }
+
+    private Cache provideCache() {
+        if (mCache == null) {
+            try {
+                mCache = new Cache(new File(mContext.getCacheDir(), "http-cache"),
+                        10 * 1024 * 1024); // 10 MB
+            } catch (Exception e) {
+                Log.e(TAG, "Could not create Cache!");
+            }
+        }
+
+        return mCache;
+    }
+
+    private Interceptor provideCacheInterceptor() {
+        return chain -> {
+            Response response = chain.proceed(chain.request());
+
+            CacheControl cacheControl;
+
+            if (isConnected()) {
+                cacheControl = new CacheControl.Builder()
+                        .maxAge(0, TimeUnit.SECONDS)
+                        .build();
+            } else {
+                cacheControl = new CacheControl.Builder()
+                        .maxStale(7, TimeUnit.DAYS)
+                        .build();
+            }
+
+            return response.newBuilder()
+                    .removeHeader(HEADER_PRAGMA)
+                    .removeHeader(HEADER_CACHE_CONTROL)
+                    .header(HEADER_CACHE_CONTROL, cacheControl.toString())
+                    .build();
+
+        };
+    }
+
+    private Interceptor provideOfflineCacheInterceptor() {
+        return chain -> {
+            Request request = chain.request();
+
+            if (!isConnected()) {
+                CacheControl cacheControl = new CacheControl.Builder()
+                        .maxStale(7, TimeUnit.DAYS)
+                        .build();
+
+                request = request.newBuilder()
+                        .removeHeader(HEADER_PRAGMA)
+                        .removeHeader(HEADER_CACHE_CONTROL)
+                        .cacheControl(cacheControl)
+                        .build();
+            }
+
+            return chain.proceed(request);
+        };
+    }
+
+    private Interceptor provideForcedOfflineCacheInterceptor() {
+        return chain -> {
+            Request request = chain.request();
+
+            CacheControl cacheControl = new CacheControl.Builder()
+                    .maxStale(7, TimeUnit.DAYS)
+                    .build();
+
+            request = request.newBuilder()
+                    .removeHeader(HEADER_PRAGMA)
+                    .removeHeader(HEADER_CACHE_CONTROL)
+                    .cacheControl(cacheControl)
+                    .build();
+
+            return chain.proceed(request);
+        };
+    }
+
+//    public void clean() {
+//        if (mOkHttpClient != null) {
+//            // Cancel Pending Request
+//            mOkHttpClient.dispatcher().cancelAll();
+//        }
+//
+//        if (mCachedOkHttpClient != null) {
+//            // Cancel Pending Cached Request
+//            mCachedOkHttpClient.dispatcher().cancelAll();
+//        }
+//
+//        mRetrofit = null;
+//        mCachedRetrofit = null;
+//
+//        if (mCache != null) {
+//            try {
+//                mCache.evictAll();
+//            } catch (IOException e) {
+//                Log.e(TAG, "Error cleaning http cache");
+//            }
+//        }
+//
+//        mCache = null;
+//    }
+
+    private boolean isConnected() {
+        try {
+            android.net.ConnectivityManager e = (android.net.ConnectivityManager) mContext.getSystemService(
+                    Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetwork = e.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        } catch (Exception e) {
+            Log.w(TAG, e.toString());
+        }
+
+        return false;
     }
 
     private void Set_googleApiClient(){
@@ -316,7 +449,7 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
 
         call.enqueue(new Callback<DirectionsResponse>() {
             @Override
-            public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+            public void onResponse(Call<DirectionsResponse> call, retrofit2.Response<DirectionsResponse> response) {
 
                 DirectionsResponse directionsResponse = response.body();
                 int step_array_size=directionsResponse.getRoutes().get(0).getLegs().get(0).getSteps().size();
@@ -454,7 +587,7 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
                 ,String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
         call.enqueue(new Callback<DirectionsResponse>() {
             @Override
-            public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+            public void onResponse(Call<DirectionsResponse> call, retrofit2.Response<DirectionsResponse> response) {
 
             }
 

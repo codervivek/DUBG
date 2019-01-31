@@ -179,25 +179,25 @@ public class NavActivity extends AppCompatActivity implements GoogleApiClient.Co
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         switch(requestCode){
-
-            case SOURCE_PLACE_PICKER_REQUEST:
-                if(resultCode == RESULT_OK) {
-                    Place place = PlacePicker.getPlace(data, this);
-                    String srcRes = String.format("%s", place.getName());
-                    sourceResultText.setText(srcRes);
-                    srcLatLong=place.getLatLng();
-                    Toast.makeText(this, srcRes, Toast.LENGTH_LONG).show();
-                }
-                break;
-            case DEST_PLACE_PICKER_REQUEST:
-                if(resultCode == RESULT_OK) {
-                    Place place = PlacePicker.getPlace(data, this);
-                    String destRes = String.format("%s", place.getName());
-                    destResultText.setText(destRes);
-                    destLatLong=place.getLatLng();
-                    Toast.makeText(this, destRes, Toast.LENGTH_LONG).show();
-                }
-                break;
+//
+//            case SOURCE_PLACE_PICKER_REQUEST:
+//                if(resultCode == RESULT_OK) {
+//                    Place place = PlacePicker.getPlace(data, this);
+//                    String srcRes = String.format("%s", place.getName());
+//                    sourceResultText.setText(srcRes);
+//                    srcLatLong=place.getLatLng();
+//                    Toast.makeText(this, srcRes, Toast.LENGTH_LONG).show();
+//                }
+//                break;
+//            case DEST_PLACE_PICKER_REQUEST:
+//                if(resultCode == RESULT_OK) {
+//                    Place place = PlacePicker.getPlace(data, this);
+//                    String destRes = String.format("%s", place.getName());
+//                    destResultText.setText(destRes);
+//                    destLatLong=place.getLatLng();
+//                    Toast.makeText(this, destRes, Toast.LENGTH_LONG).show();
+//                }
+//                break;
 
         }
     }

@@ -14,6 +14,8 @@ import android.graphics.Paint;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -49,6 +51,14 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.SphericalUtil;
+//import com.microsoft.cognitiveservices.speech.ResultReason;
+//import com.microsoft.cognitiveservices.speech.SpeechConfig;
+//import com.microsoft.cognitiveservices.speech.SpeechRecognitionResult;
+//import com.microsoft.cognitiveservices.speech.SpeechRecognizer;
+import com.microsoft.cognitiveservices.speech.ResultReason;
+import com.microsoft.cognitiveservices.speech.SpeechConfig;
+import com.microsoft.cognitiveservices.speech.SpeechRecognitionResult;
+import com.microsoft.cognitiveservices.speech.SpeechRecognizer;
 import com.univ.team12.navar.ar.ArBeyondarGLSurfaceView;
 import com.univ.team12.navar.ar.ArFragmentSupport;
 import com.univ.team12.navar.ar.OnTouchBeyondarViewListenerMod;
@@ -74,11 +84,17 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import okhttp3.Cache;
+import okhttp3.CacheControl;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -87,6 +103,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static android.graphics.Paint.ANTI_ALIAS_FLAG;
+import static com.univ.team12.navar.ArCamActivity.HEADER_CACHE_CONTROL;
+import static com.univ.team12.navar.ArCamActivity.HEADER_PRAGMA;
 
 /**
  * Created by Amal Krishnan on 10-04-2017.
@@ -109,6 +127,17 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
     private LocationListener mLocationListener;
     private int selectedVisiblity;
 
+    public static final String BASE_URL = "https://lateralview.co";
+    public static final String HEADER_CACHE_CONTROL = "Cache-Control";
+    public static final String HEADER_PRAGMA = "Pragma";
+
+    private Context mContext;
+
+    private Retrofit mRetrofit, mCachedRetrofit;
+
+    private Cache mCache;
+    OkHttpClient.Builder httpClient;
+
     @BindView(R.id.poi_place_detail)
     CardView poi_cardview;
     @BindView(R.id.poi_place_close_btn)
@@ -125,12 +154,23 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
     Button poi_place_maps_btn;
     @BindView(R.id.sendMessage)
     Button message;
+    @BindView(R.id.loading_text)
+    TextView text;
+    // Replace below with your own subscription key
+    private static String speechSubscriptionKey = "412dc6396e4248c08ff88750f64c9ee2";
+    // Replace below with your own service region (e.g., "westus").
+    private static String serviceRegion = "southeastasia";
+
+
 
     SharedPreferences.Editor myEditor;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_poi_browser);
+
+
+
 
         mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         mLocationListener = new LocationListener() {
@@ -221,152 +261,309 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
 
                     }
                 };
-                AlertDialog.Builder builder = new AlertDialog.Builder(PoiBrowserActivity.this);
-                // Get the layout inflater
-                LayoutInflater inflater = PoiBrowserActivity.this.getLayoutInflater();
-                final View v=inflater.inflate(R.layout.message,null);
+                try {
+                    text.setText("Listening");
+                    text.setVisibility(View.VISIBLE);
+//                    Thread.sleep(20);
+                    SpeechConfig config = SpeechConfig.fromSubscription(speechSubscriptionKey, serviceRegion);
+                    assert(config != null);
 
+                    SpeechRecognizer reco = new SpeechRecognizer(config);
+                    assert(reco != null);
 
-                // Inflate and set the layout for the dialog
-                // Pass null as the parent view because its going in the dialog layout
-                builder.setView(v)
-                        // Add action buttons
-                        .setPositiveButton("Submit", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int id) {
-                                EditText message = (EditText) v.findViewById(R.id.message);
-                                if(message.getText().toString().equals("near")){
-                                    HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-                                    interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-                                    OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+                    Future<SpeechRecognitionResult> task = reco.recognizeOnceAsync();
+                    assert(task != null);
 
-                                    Retrofit retrofit = new Retrofit.Builder()
-                                            .baseUrl(getResources().getString(R.string.localhost_base_url))
-                                            .addConverterFactory(GsonConverterFactory.create())
-                                            .build();
+                    // Note: this will block the UI thread, so eventually, you want to
+                    //        register for the event (see full samples)
+                    SpeechRecognitionResult result = task.get();
+                    assert(result != null);
 
-                                    RetrofitInterface apiService =
-                                            retrofit.create(RetrofitInterface.class);
+                    if (result.getReason() == ResultReason.RecognizedSpeech) {
+                        text.setVisibility(View.INVISIBLE);
 
-                                    final Call<PoiResponse> call = apiService.listPOI();
+                        if((result.getText()).startsWith("Send a message")) {
+                            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
 
-                                    Log.e("vivek","Retrofit done");
+                            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+                            OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
 
-                                    call.enqueue(new Callback<PoiResponse>() {
-                                        @Override
-                                        public void onResponse(Call<PoiResponse> call, Response<PoiResponse> response) {
-                                            Log.e("vivek","Retrofit recieved");
+                            Retrofit retrofit = new Retrofit.Builder()
+                                    .baseUrl(getResources().getString(R.string.localhost_base_url))
+                                    .addConverterFactory(GsonConverterFactory.create())
+                                    .build();
 
+                            RetrofitInterface apiService =
+                                    retrofit.create(RetrofitInterface.class);
 
-
-                                            List<Status> poiResult=response.body().getStatus();
-
-                                            Double min=Double.MAX_VALUE;
-                                            Double minLat=0d;
-                                            Double minLong=0d;
-                                            for(int i=0;i<poiResult.size();i++) {
-                                                Double distance=(SphericalUtil.computeDistanceBetween(
-                                                        new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),
-                                                        new LatLng(Double.parseDouble(poiResult.get(i).getFields().getLatitude()),
-                                                                Double.parseDouble(poiResult.get(i).getFields().getLongitude()))));
-                                                if(distance<min){
-                                                    min=distance;
-                                                    minLat=Double.parseDouble(poiResult.get(i).getFields().getLatitude());
-                                                    minLong=Double.parseDouble(poiResult.get(i).getFields().getLongitude());
-                                                }
-                                            }
-
-                                                Intent intent = new Intent(PoiBrowserActivity.this, ArCamActivity.class);
-
-                                                try {
-
-                                                    intent.putExtra("SRC", "Current Location");
-                                                    intent.putExtra("DEST", minLat + "," +
-                                                            minLong);
-                                                    intent.putExtra("SRCLATLNG", mLastLocation.getLatitude() + "," + mLastLocation.getLongitude());
-                                                    intent.putExtra("DESTLATLNG", minLat + "," +
-                                                            minLong);
-                                                    startActivity(intent);
-                                                    finish();
-                                                } catch (NullPointerException npe) {
-                                                    Log.d(TAG, "onClick: The IntentExtras are Empty");
-                                                }
-                                        }
-
-                                        @Override
-                                        public void onFailure(Call<PoiResponse> call, Throwable t) {
-                                        }
-                                    });
-                                    return;
-
+                            final Call<DirectionsResponse> call = apiService.createMessage(myPreferences.getString("id", ""), String.valueOf(mLastLocation.getLatitude()), String.valueOf(mLastLocation.getLongitude()), result.getText().substring(14));
+                            call.enqueue(new Callback<DirectionsResponse>() {
+                                @Override
+                                public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+                                    Log.e("vivek", "Message chala gaya");
                                 }
-                                else if(message.getText().toString().equals("visibility")) {
-                                    AlertDialog.Builder alert_dialog_builder_course_selection = new AlertDialog.Builder(PoiBrowserActivity.this);
-                                    String []choice={"Low","Medium","High"};
-                                    alert_dialog_builder_course_selection.setTitle("Select visiblity").setSingleChoiceItems(choice, -1, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        //when selected identify the course index selected
-                                        public void onClick(DialogInterface dialog, int selected_index) {
-                                            selectedVisiblity= selected_index;
+
+                                @Override
+                                public void onFailure(Call<DirectionsResponse> call, Throwable t) {
+                                }
+                            });
+                            Toast.makeText(PoiBrowserActivity.this,"\""+result.getText().substring(14)+"\" is sent",Toast.LENGTH_LONG).show();
+                        }
+                        else if((result.getText().toLowerCase()).contains("nearest victim")){
+                            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+                            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+                            OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+
+                            Retrofit retrofit = new Retrofit.Builder()
+                                    .baseUrl(getResources().getString(R.string.localhost_base_url))
+                                    .addConverterFactory(GsonConverterFactory.create())
+                                    .build();
+
+                            RetrofitInterface apiService =
+                                    retrofit.create(RetrofitInterface.class);
+
+                            final Call<PoiResponse> call = apiService.listPOI();
+
+                            Log.e("vivek","Retrofit done");
+
+                            call.enqueue(new Callback<PoiResponse>() {
+                                @Override
+                                public void onResponse(Call<PoiResponse> call, Response<PoiResponse> response) {
+                                    Log.e("vivek","Retrofit recieved");
+
+
+
+                                    List<Status> poiResult=response.body().getStatus();
+
+                                    Double min=Double.MAX_VALUE;
+                                    Double minLat=0d;
+                                    Double minLong=0d;
+                                    for(int i=0;i<poiResult.size();i++) {
+                                        Double distance=(SphericalUtil.computeDistanceBetween(
+                                                new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),
+                                                new LatLng(Double.parseDouble(poiResult.get(i).getFields().getLatitude()),
+                                                        Double.parseDouble(poiResult.get(i).getFields().getLongitude()))));
+                                        if(distance<min){
+                                            min=distance;
+                                            minLat=Double.parseDouble(poiResult.get(i).getFields().getLatitude());
+                                            minLong=Double.parseDouble(poiResult.get(i).getFields().getLongitude());
                                         }
-                                    }).setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        //on positive response allow session password taking
-                                        public void onClick(DialogInterface dialog, int selected_index) {
+                                    }
+
+                                    Intent intent = new Intent(PoiBrowserActivity.this, ArCamActivity.class);
+
+                                    try {
+
+                                        intent.putExtra("SRC", "Current Location");
+                                        intent.putExtra("DEST", minLat + "," +
+                                                minLong);
+                                        intent.putExtra("SRCLATLNG", mLastLocation.getLatitude() + "," + mLastLocation.getLongitude());
+                                        intent.putExtra("DESTLATLNG", minLat + "," +
+                                                minLong);
+                                        startActivity(intent);
+                                        finish();
+                                    } catch (NullPointerException npe) {
+                                        Log.d(TAG, "onClick: The IntentExtras are Empty");
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<PoiResponse> call, Throwable t) {
+                                }
+                            });
+
+                        }
+                        else if(result.getText().toLowerCase().contains("visibility")){
+                            AlertDialog.Builder alert_dialog_builder_course_selection = new AlertDialog.Builder(PoiBrowserActivity.this);
+                            String []choice={"Low","Medium","High"};
+                            alert_dialog_builder_course_selection.setTitle("Select visiblity").setSingleChoiceItems(choice, -1, new DialogInterface.OnClickListener() {
+                                @Override
+                                //when selected identify the course index selected
+                                public void onClick(DialogInterface dialog, int selected_index) {
+                                    selectedVisiblity= selected_index;
+                                }
+                            }).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                //on positive response allow session password taking
+                                public void onClick(DialogInterface dialog, int selected_index) {
 //                                            Log.e("asjd",""+selectedMess);
-                                            myEditor.putInt("visiblity",selectedVisiblity);
-                                            myEditor.apply();
+                                    myEditor.putInt("visiblity",selectedVisiblity);
+                                    myEditor.apply();
 //                                            mess.setText(messList.get(selectedMess)+" Hostel");
-                                        }
-                                    }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        //on negative response end the dialog
-                                        public void onClick(DialogInterface dialog, int selected_index) {
-                                            dialog.cancel();
-                                        }
-                                    });
-                                    AlertDialog alert_dialog_course_selection = alert_dialog_builder_course_selection.create();
-
-                                    // show it
-                                    alert_dialog_course_selection.show();
-                                    return;
                                 }
-                                HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-                                interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-                                OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+                            }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                //on negative response end the dialog
+                                public void onClick(DialogInterface dialog, int selected_index) {
+                                    dialog.cancel();
+                                }
+                            });
+                            AlertDialog alert_dialog_course_selection = alert_dialog_builder_course_selection.create();
 
-                                Retrofit retrofit = new Retrofit.Builder()
-                                        .baseUrl(getResources().getString(R.string.localhost_base_url))
-                                        .addConverterFactory(GsonConverterFactory.create())
-                                        .build();
+                            // show it
+                            alert_dialog_course_selection.show();
+                        }
+                        else {
+                            text.setVisibility(View.INVISIBLE);
+                            Toast.makeText(PoiBrowserActivity.this,result.getText()+" does not match with any command",Toast.LENGTH_LONG).show();
+                        }
+                    }
+                    else {
+                        text.setVisibility(View.INVISIBLE);
+                        Toast.makeText(PoiBrowserActivity.this,"Error recognizing. Did you update the subscription info?" + System.lineSeparator() + result.toString(),Toast.LENGTH_LONG).show();
+                    }
 
-                                RetrofitInterface apiService =
-                                        retrofit.create(RetrofitInterface.class);
-
-                                final Call<DirectionsResponse> call = apiService.createMessage(myPreferences.getString("id",""),String.valueOf(mLastLocation.getLatitude()),String.valueOf(mLastLocation.getLongitude()),message.getText().toString());
-                                call.enqueue(new Callback<DirectionsResponse>() {
-                                    @Override
-                                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
-                                        Log.e("vivek","Message chala gaya");
-                                    }
-
-                                    @Override
-                                    public void onFailure(Call<DirectionsResponse> call, Throwable t) {
-                                    }
-                                });
-                            }
-                        })
-                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                            }
-                        });
-
-
-                builder.setMessage("Enter message to be sent");
-                builder.setTitle("Send Message");
-
-                AlertDialog d = builder.create();
-                d.show();
+                    reco.close();
+                } catch (Exception ex) {
+                    Log.e("SpeechSDKDemo", "unexpected " + ex.getMessage());
+                    assert(false);
+                }
+//                AlertDialog.Builder builder = new AlertDialog.Builder(PoiBrowserActivity.this);
+//                // Get the layout inflater
+//                LayoutInflater inflater = PoiBrowserActivity.this.getLayoutInflater();
+//                final View v=inflater.inflate(R.layout.message,null);
+//
+//
+//                // Inflate and set the layout for the dialog
+//                // Pass null as the parent view because its going in the dialog layout
+//                builder.setView(v)
+//                        // Add action buttons
+//                        .setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+//                            @Override
+//                            public void onClick(DialogInterface dialog, int id) {
+//                                EditText message = (EditText) v.findViewById(R.id.message);
+//                                if(message.getText().toString().equals("near")){
+//                                    HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+//                                    interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+//                                    OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+//
+//                                    Retrofit retrofit = new Retrofit.Builder()
+//                                            .baseUrl(getResources().getString(R.string.localhost_base_url))
+//                                            .addConverterFactory(GsonConverterFactory.create())
+//                                            .build();
+//
+//                                    RetrofitInterface apiService =
+//                                            retrofit.create(RetrofitInterface.class);
+//
+//                                    final Call<PoiResponse> call = apiService.listPOI();
+//
+//                                    Log.e("vivek","Retrofit done");
+//
+//                                    call.enqueue(new Callback<PoiResponse>() {
+//                                        @Override
+//                                        public void onResponse(Call<PoiResponse> call, Response<PoiResponse> response) {
+//                                            Log.e("vivek","Retrofit recieved");
+//
+//
+//
+//                                            List<Status> poiResult=response.body().getStatus();
+//
+//                                            Double min=Double.MAX_VALUE;
+//                                            Double minLat=0d;
+//                                            Double minLong=0d;
+//                                            for(int i=0;i<poiResult.size();i++) {
+//                                                Double distance=(SphericalUtil.computeDistanceBetween(
+//                                                        new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),
+//                                                        new LatLng(Double.parseDouble(poiResult.get(i).getFields().getLatitude()),
+//                                                                Double.parseDouble(poiResult.get(i).getFields().getLongitude()))));
+//                                                if(distance<min){
+//                                                    min=distance;
+//                                                    minLat=Double.parseDouble(poiResult.get(i).getFields().getLatitude());
+//                                                    minLong=Double.parseDouble(poiResult.get(i).getFields().getLongitude());
+//                                                }
+//                                            }
+//
+//                                                Intent intent = new Intent(PoiBrowserActivity.this, ArCamActivity.class);
+//
+//                                                try {
+//
+//                                                    intent.putExtra("SRC", "Current Location");
+//                                                    intent.putExtra("DEST", minLat + "," +
+//                                                            minLong);
+//                                                    intent.putExtra("SRCLATLNG", mLastLocation.getLatitude() + "," + mLastLocation.getLongitude());
+//                                                    intent.putExtra("DESTLATLNG", minLat + "," +
+//                                                            minLong);
+//                                                    startActivity(intent);
+//                                                    finish();
+//                                                } catch (NullPointerException npe) {
+//                                                    Log.d(TAG, "onClick: The IntentExtras are Empty");
+//                                                }
+//                                        }
+//
+//                                        @Override
+//                                        public void onFailure(Call<PoiResponse> call, Throwable t) {
+//                                        }
+//                                    });
+//                                    return;
+//
+//                                }
+//                                else if(message.getText().toString().equals("visibility")) {
+//                                    AlertDialog.Builder alert_dialog_builder_course_selection = new AlertDialog.Builder(PoiBrowserActivity.this);
+//                                    String []choice={"Low","Medium","High"};
+//                                    alert_dialog_builder_course_selection.setTitle("Select visiblity").setSingleChoiceItems(choice, -1, new DialogInterface.OnClickListener() {
+//                                        @Override
+//                                        //when selected identify the course index selected
+//                                        public void onClick(DialogInterface dialog, int selected_index) {
+//                                            selectedVisiblity= selected_index;
+//                                        }
+//                                    }).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+//                                        @Override
+//                                        //on positive response allow session password taking
+//                                        public void onClick(DialogInterface dialog, int selected_index) {
+////                                            Log.e("asjd",""+selectedMess);
+//                                            myEditor.putInt("visiblity",selectedVisiblity);
+//                                            myEditor.apply();
+////                                            mess.setText(messList.get(selectedMess)+" Hostel");
+//                                        }
+//                                    }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+//                                        @Override
+//                                        //on negative response end the dialog
+//                                        public void onClick(DialogInterface dialog, int selected_index) {
+//                                            dialog.cancel();
+//                                        }
+//                                    });
+//                                    AlertDialog alert_dialog_course_selection = alert_dialog_builder_course_selection.create();
+//
+//                                    // show it
+//                                    alert_dialog_course_selection.show();
+//                                    return;
+//                                }
+//                                HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+//                                interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+//                                OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+//
+//                                Retrofit retrofit = new Retrofit.Builder()
+//                                        .baseUrl(getResources().getString(R.string.localhost_base_url))
+//                                        .addConverterFactory(GsonConverterFactory.create())
+//                                        .build();
+//
+//                                RetrofitInterface apiService =
+//                                        retrofit.create(RetrofitInterface.class);
+//
+//                                final Call<DirectionsResponse> call = apiService.createMessage(myPreferences.getString("id",""),String.valueOf(mLastLocation.getLatitude()),String.valueOf(mLastLocation.getLongitude()),message.getText().toString());
+//                                call.enqueue(new Callback<DirectionsResponse>() {
+//                                    @Override
+//                                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+//                                        Log.e("vivek","Message chala gaya");
+//                                    }
+//
+//                                    @Override
+//                                    public void onFailure(Call<DirectionsResponse> call, Throwable t) {
+//                                    }
+//                                });
+//                            }
+//                        })
+//                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+//                            public void onClick(DialogInterface dialog, int id) {
+//                            }
+//                        });
+//
+//
+//                builder.setMessage("Enter message to be sent");
+//                builder.setTitle("Send Message");
+//
+//                AlertDialog d = builder.create();
+//                d.show();
             }
         });
 
@@ -928,7 +1125,9 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
                 Canvas canvas = new Canvas(snapshot);
                 view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
                 view.draw(canvas);
-            } finally {
+                Thread.sleep(100);
+            }
+            catch (Exception e){}finally {
                 view.setDrawingCacheEnabled(false);
             }
 
@@ -993,7 +1192,7 @@ public class PoiBrowserActivity extends FragmentActivity implements GoogleApiCli
                 Canvas canvas = new Canvas(snapshot);
                 view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
                 view.draw(canvas);
-                Thread.sleep(100);
+                Thread.sleep(50);
             }
             catch (Exception e){
                 e.printStackTrace();
