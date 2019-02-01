@@ -40,6 +40,27 @@ DUBG is a mixed reality app for efficient post disaster management. Rescuer team
 *   The website has a **dashboard **which show the location of affected areas on map to give a sense of the magnitude of the disaster. The helpers can also report the status of Victims through the DUBG website.
 
 
+## **Using the app**
+
+**Reporting status of Victims through the DUBG website**
+*   Step 1: Login with your credentials if you have an account else create one 
+Default Login: Username: codefundopp
+ Password: Microsoft 
+*   Step 2: After login, click on “Report Victims” button on upper right corner of page
+*   Step 3: Enter the details of the status of the victims injured and stuck. Specify the location of victims using the Maps
+*   Step 4: Click Submit
+
+**Using AR functionality through App**
+You need to enable all permissions for the app in App Info and Login using the login button before starting the AR. Use the codefundopp id created for login.
+*   Step 1: Login using the Login button in the app
+*   Step 2: Click on **VIEW STATUS IN AR** to see live updates of victims, fellow rescuers and to access AR navigation for easier routing. 
+*   You can also control the interface by giving voice commands like "send a message <message>", "navigate to nearest victim" and "set visibility", after clicking the **SEND MESSAGE** button.
+
+
+**Victims**
+
+To call for help click on SOS button in app. Enter your details to notify the rescuers about your situation.
+
 ## **Connectivity Issues:**
 
 Our features involving AR markers like AR Navigation does not require continuous internet connectivity as it based on GPS. Professional map softwares requires us to download large data to render the whole world. On the other hand we require only the data-points between the source and destination which is portrayed on the camera feed for rendering. This increases the feasibility of our solution in the disaster struck areas with poor internet connectivity.
