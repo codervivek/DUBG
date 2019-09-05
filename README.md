@@ -23,9 +23,9 @@
 
 In the event of a catastrophe, the affected population gets broadly divided into 2 categories: victims and the rescuers. A disaster can take thousands of human lives and can put millions at stake. After a disaster, attending the victims becomes the top priority because they still have a chance to survive. In such situations everything boils down to the ability of the victims and rescuers to communicate with each other easily and effectively. This is the most important requirement for any rescue operation to be successfully carried and it decides whether a victim survives or not. With this problem in mind, we have built DUBG. 
 
-DUBG is a mixed reality app for efficient post disaster management. Rescuer teams are very busy during operation, which is why we built our app based on Mixed Reality so that the **rescuers don't waste time on planning their rescue drive and operating any device for communication. **Our vision is to create an Augmented Reality (AR) based navigation system which disaster rescue team can use in a hassle free manner. 
+DUBG is a mixed reality app for efficient post disaster management. Rescuer teams are very busy during operation, which is why we built our app based on Mixed Reality so that the **rescuers don't waste time on planning their rescue drive and operating any device for communication**. Our vision is to create an Augmented Reality (AR) based navigation system which disaster rescue team can use in a hassle free manner. 
 
-**The features of our application can also be extended to help army to communicate and coordinate efficaciously in unknown terrains **.
+**The features of our application can also be extended to help army to communicate and coordinate efficaciously in unknown terrains**.
 
 
 ## **Features:**
